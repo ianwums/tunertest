@@ -24,37 +24,38 @@
       display: grid; place-items: center;
     }
     .app {
-      width: min(920px, 92vw);
+      width: min(980px, 95vw);
       background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
       border: 1px solid #1f2631;
       border-radius: 18px;
       box-shadow: 0 20px 50px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.03);
       padding: 20px 22px 26px;
     }
-    header { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+    header { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; }
     h1 { font-size: 22px; margin: 0; letter-spacing: .4px; font-weight: 700; }
     .muted { color: var(--muted); font-size: 13px; }
-    .row { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
-    button, select {
+
+    .controls { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+    button, select, input[type="range"] {
       background: #19212b; color: var(--text);
-      border: 1px solid #263141; border-radius: 10px; padding: 10px 14px; font-size: 14px;
+      border: 1px solid #263141; border-radius: 10px; padding: 10px 12px; font-size: 13px;
       cursor: pointer; transition: transform .05s ease, background .2s; user-select: none;
     }
+    input[type="range"] { cursor: ew-resize; padding: 6px; accent-color: var(--accent); }
     button:hover { background: #1d2733; }
     button:active { transform: translateY(1px); }
     button.primary { background: #213041; border-color: #2a3b4e; }
     button.primary:hover { background: #26384d; }
 
     .board { margin-top: 16px; display: grid; grid-template-columns: 1.1fr 1fr; gap: 18px; }
-    @media (max-width: 720px) { .board { grid-template-columns: 1fr; } }
+    @media (max-width: 860px) { .board { grid-template-columns: 1fr; } }
 
     .gauge-card, .readout, .strings, .tips, .wave {
       background: #0e141c; border: 1px solid #1c2330; border-radius: 14px; padding: 16px; position: relative;
     }
     .gauge-wrap { display:grid; place-items:center; padding: 10px; }
 
-    /* Needle gauge */
-    .gauge { width: 100%; max-width: 520px; aspect-ratio: 2 / 1; }
+    .gauge { width: 100%; max-width: 560px; aspect-ratio: 2 / 1; }
     .needle { transform-origin: 50% 100%; transition: transform 60ms linear; }
 
     .readout { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; align-items: center; text-align: center; }
@@ -63,16 +64,13 @@
     .readout .value { font-size: 18px; font-weight: 600; }
 
     .strings { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
-    .string-btn { padding: 10px 8px; text-align: center; border-radius: 10px; border: 1px solid #263141; background: #141b24; cursor: pointer; }
+    .string-btn { padding: 10px 8px; text-align: center; border-radius: 10px; border: 1px solid #263141; background: #141b24; }
     .string-btn.active { outline: 2px solid var(--accent); background: #142233; }
+    .string-btn .row { display:flex; align-items:center; justify-content:space-between; gap:8px; }
     .string-btn .note { font-weight: 800; font-size: 18px; }
     .string-btn .freq { font-size: 12px; color: var(--muted); }
-
-    .mode { display: inline-flex; gap: 6px; align-items: center; padding: 8px; border-radius: 10px; background: #111822; border:1px solid #222b3a; }
-    .mode label { font-size: 13px; color: var(--muted); }
-    .mode .toggle { background:#10161f; border:1px solid #243046; border-radius: 8px; padding:6px; display:flex; }
-    .mode .toggle button { padding:6px 10px; background: transparent; border: none; border-radius:6px; }
-    .mode .toggle button.active { background:#1b2636; }
+    .string-btn .tone { background:#10161f; border:1px solid #243046; border-radius:8px; padding:6px 8px; font-size:12px; }
+    .string-btn .tone.on { background:#1b2636; }
 
     .status-badge { position:absolute; top:12px; right:12px; font-size:12px; padding:6px 9px; border-radius: 999px; border:1px solid #233047; color: var(--muted); }
     .status-badge.ok { color:#0d2; border-color:#1d3; background:#112218; }
@@ -83,6 +81,9 @@
 
     .hint { text-align:center; font-size: 14px; color: var(--muted); margin-top: 6px; }
 
+    .kv { display:flex; gap:10px; align-items:center; }
+    .kv label { font-size:12px; color:var(--muted); }
+
     canvas { width: 100%; height: 120px; display: block; }
   </style>
 </head>
@@ -91,16 +92,11 @@
     <header>
       <div>
         <h1>Guitar Tuner <span class="muted">— Standard (E A D G B E)</span></h1>
-        <div class="muted">Grants mic permission to detect pitch and show how many cents you are from the target.</div>
+        <div class="muted">Mic pitch detection with per‑string reference tones. Green within ±5 cents.</div>
       </div>
-      <div class="row">
-        <div class="mode" aria-label="Mode">
-          <label>Mode</label>
-          <div class="toggle" role="tablist" aria-label="Tuner mode">
-            <button id="btnAuto" class="active" role="tab" aria-selected="true">Auto</button>
-            <button id="btnManual" role="tab" aria-selected="false">Manual</button>
-          </div>
-        </div>
+      <div class="controls">
+        <div class="kv"><label for="refVol">Tone vol</label><input id="refVol" type="range" min="0" max="100" value="20"/></div>
+        <div class="kv"><label for="micGain">Mic boost</label><input id="micGain" type="range" min="1" max="10" step="0.5" value="3"/></div>
         <button id="micBtn" class="primary" aria-pressed="false">🎙️ Enable Microphone</button>
       </div>
     </header>
@@ -109,17 +105,12 @@
       <div class="gauge-card">
         <div id="status" class="status-badge">mic: off</div>
         <div class="gauge-wrap">
-          <!-- SVG semicircle gauge -->
           <svg class="gauge" viewBox="0 0 200 100" aria-label="Tuning meter">
-            <!-- arc ticks -->
             <g id="ticks"></g>
-            <!-- center pivot -->
             <circle cx="100" cy="100" r="4" fill="#8ea3b5" />
-            <!-- needle -->
             <g id="needle" class="needle">
               <rect x="98.7" y="18" width="2.6" height="84" rx="1.3" fill="#e8f1ff" />
             </g>
-            <!-- target marker -->
             <rect x="99.2" y="10" width="1.6" height="10" rx="1" fill="#5cc8ff"/>
           </svg>
         </div>
@@ -143,16 +134,11 @@
       <div>
         <div class="strings" role="tablist" aria-label="Strings (low to high)">
           <!-- E2 A2 D3 G3 B3 E4 -->
-          <button class="string-btn" data-index="0"><div class="note">E2</div><div class="freq">82.41 Hz</div></button>
-          <button class="string-btn" data-index="1"><div class="note">A2</div><div class="freq">110.00 Hz</div></button>
-          <button class="string-btn" data-index="2"><div class="note">D3</div><div class="freq">146.83 Hz</div></button>
-          <button class="string-btn" data-index="3"><div class="note">G3</div><div class="freq">196.00 Hz</div></button>
-          <button class="string-btn" data-index="4"><div class="note">B3</div><div class="freq">246.94 Hz</div></button>
-          <button class="string-btn" data-index="5"><div class="note">E4</div><div class="freq">329.63 Hz</div></button>
+          <!-- buttons are populated by JS so we can attach tone toggles -->
         </div>
         <div class="tips" style="margin-top:12px">
-          <p><strong>Auto mode</strong> chooses the closest guitar string. Switch to <strong>Manual</strong> to lock to a string.</p>
-          <p>Indicator turns green when you’re within ±5 cents. If the cents value is negative, <em>tune up</em>; if positive, <em>tune down</em>.</p>
+          <p><strong>Auto mode</strong> chooses the closest string; click a tile to lock (manual). Use the speaker button to play/stop a reference tone for any string.</p>
+          <p>Need more pickup? Increase <strong>Mic boost</strong> (adds gain + compression).</p>
         </div>
         <div class="wave" style="margin-top:12px">
           <div class="label" style="margin-bottom:6px">Input level</div>
@@ -172,7 +158,7 @@
     { name: 'B3', freq: 246.9417 },
     { name: 'E4', freq: 329.6276 },
   ];
-  const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+  const NOTE_NAMES = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
 
   // UI elements
   const micBtn = document.getElementById('micBtn');
@@ -184,24 +170,64 @@
   const levelCanvas = document.getElementById('levelCanvas');
   const ticksG = document.getElementById('ticks');
   const needle = document.getElementById('needle');
+  const stringsContainer = document.querySelector('.strings');
+  const refVolEl = document.getElementById('refVol');
+  const micGainEl = document.getElementById('micGain');
 
   // Mode & string selection
   let autoMode = true;
   let manualIndex = 0;
-  const btnAuto = document.getElementById('btnAuto');
-  const btnManual = document.getElementById('btnManual');
-  const stringBtns = Array.from(document.querySelectorAll('.string-btn'));
 
-  // Audio context & nodes
-  let audioCtx, analyser, source, dataBuf;
+  // Audio context & nodes (input)
+  let audioCtx, analyser, source, dataBuf, comp, preGain;
   let running = false;
 
-  // Draw gauge ticks (-50c to +50c, every 10c)
+  // Reference tone nodes
+  let toneGain; // master gain for tones
+  const toneOscs = new Array(STANDARD.length).fill(null);
+
+  // Build string tiles with tone buttons
+  function buildStringTiles(){
+    stringsContainer.innerHTML = '';
+    STANDARD.forEach((s, i)=>{
+      const btn = document.createElement('button');
+      btn.className = 'string-btn';
+      btn.dataset.index = i;
+      btn.innerHTML = `<div class="row"><div><div class="note">${s.name}</div><div class="freq">${s.freq.toFixed(2)} Hz</div></div><button type="button" class="tone" aria-pressed="false" title="Toggle reference tone">🔈</button></div>`;
+      stringsContainer.appendChild(btn);
+      // lock target on tile click (outside tone button)
+      btn.addEventListener('click', (e)=>{
+        if (e.target.closest('.tone')) return; // ignore if tone button
+        setMode(false);
+        manualIndex = i;
+        updateActiveTile(i);
+      });
+      // tone toggle
+      const toneBtn = btn.querySelector('.tone');
+      toneBtn.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        toggleTone(i, toneBtn);
+      });
+    });
+    updateActiveTile(0);
+  }
+
+  function updateActiveTile(idx){
+    Array.from(document.querySelectorAll('.string-btn')).forEach((b,j)=> b.classList.toggle('active', j===idx));
+  }
+
+  // Mode switching
+  function setMode(isAuto){
+    autoMode = isAuto;
+    hintEl.textContent = isAuto ? 'Auto: closest string is selected for you.' : 'Manual: click a string tile to lock target.';
+  }
+
+  // Draw gauge ticks
   (function drawTicks(){
-    const r = 90; // radius
+    const r = 90;
     for (let c=-50; c<=50; c+=10) {
-      const t = (c + 50) / 100; // 0..1 across arc
-      const angle = Math.PI - Math.PI * t; // pi..0
+      const t = (c + 50) / 100;
+      const angle = Math.PI - Math.PI * t;
       const x1 = 100 + Math.cos(angle) * (r+6);
       const y1 = 100 - Math.sin(angle) * (r+6);
       const x2 = 100 + Math.cos(angle) * (r+ (c%20===0? 16:12));
@@ -230,26 +256,7 @@
     }
   })();
 
-  // Mode handlers
-  btnAuto.addEventListener('click', () => setMode(true));
-  btnManual.addEventListener('click', () => setMode(false));
-  function setMode(isAuto) {
-    autoMode = isAuto;
-    btnAuto.classList.toggle('active', isAuto);
-    btnManual.classList.toggle('active', !isAuto);
-    hintEl.textContent = isAuto ? 'Auto: closest string is selected for you.' : 'Manual: click a string tile to lock target.';
-  }
-
-  stringBtns.forEach(b => b.addEventListener('click', () => {
-    stringBtns.forEach(x => x.classList.remove('active'));
-    b.classList.add('active');
-    manualIndex = parseInt(b.dataset.index, 10);
-    setMode(false);
-  }));
-  // default active (low E)
-  stringBtns[0].classList.add('active');
-
-  // Microphone setup
+  // Microphone setup with compression + adjustable gain
   micBtn.addEventListener('click', startAudio);
   async function startAudio() {
     if (running) return;
@@ -257,15 +264,36 @@
       statusEl.textContent = 'requesting mic…';
       const stream = await navigator.mediaDevices.getUserMedia({ audio: {
         echoCancellation: false,
-        noiseSuppression: false,
-        autoGainControl: false
+        noiseSuppression: true,
+        autoGainControl: true
       }});
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+      // Input chain: mic -> compressor -> preGain -> analyser
       source = audioCtx.createMediaStreamSource(stream);
+      comp = audioCtx.createDynamicsCompressor();
+      comp.threshold.setValueAtTime(-50, audioCtx.currentTime);
+      comp.knee.setValueAtTime(30, audioCtx.currentTime);
+      comp.ratio.setValueAtTime(12, audioCtx.currentTime);
+      comp.attack.setValueAtTime(0.003, audioCtx.currentTime);
+      comp.release.setValueAtTime(0.25, audioCtx.currentTime);
+
+      preGain = audioCtx.createGain();
+      setMicBoost(parseFloat(micGainEl.value));
+
       analyser = audioCtx.createAnalyser();
-      analyser.fftSize = 2048; // time-domain buffer size
+      analyser.fftSize = 2048;
       dataBuf = new Float32Array(analyser.fftSize);
-      source.connect(analyser);
+
+      source.connect(comp);
+      comp.connect(preGain);
+      preGain.connect(analyser);
+
+      // Reference tone chain: toneOsc -> toneGain -> destination (so you can hear it)
+      toneGain = audioCtx.createGain();
+      toneGain.gain.value = refVolEl.value / 100;
+      toneGain.connect(audioCtx.destination);
+
       running = true;
       statusEl.textContent = 'mic: on';
       statusEl.classList.remove('err');
@@ -282,12 +310,39 @@
     }
   }
 
-  // Animation state
-  let lastFreq = 0;
-  let smoothFreq = 0; // exponential smoothing
-  const SMOOTH_ALPHA = 0.25;
+  // Respond to sliders
+  micGainEl.addEventListener('input', () => setMicBoost(parseFloat(micGainEl.value)) );
+  refVolEl.addEventListener('input', ()=>{ if (toneGain) toneGain.gain.value = refVolEl.value / 100; });
 
-  // Main loop: detect pitch and update UI
+  function setMicBoost(mult){ if (preGain) preGain.gain.setValueAtTime(mult, audioCtx.currentTime); }
+
+  // Tone helpers
+  function toggleTone(i, toneBtn){
+    if (!audioCtx) return; // needs context
+    if (toneOscs[i]) {
+      // stop
+      try { toneOscs[i].stop(); } catch {}
+      toneOscs[i].disconnect();
+      toneOscs[i] = null;
+      toneBtn.classList.remove('on');
+      toneBtn.setAttribute('aria-pressed','false');
+      return;
+    }
+    // start new osc for that string
+    const osc = audioCtx.createOscillator();
+    // richer than sine but not harsh: triangle through gentle lowpass
+    const tri = osc; tri.type = 'triangle'; tri.frequency.value = STANDARD[i].freq;
+    const lp = audioCtx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 3000; lp.Q.value = 0.0001;
+    tri.connect(lp); lp.connect(toneGain);
+    tri.start();
+    toneOscs[i] = tri;
+    toneBtn.classList.add('on');
+    toneBtn.setAttribute('aria-pressed','true');
+  }
+
+  // Animation state
+  let smoothFreq = 0; const SMOOTH_ALPHA = 0.25;
+
   function loop() {
     if (!running) return;
     analyser.getFloatTimeDomainData(dataBuf);
@@ -304,16 +359,16 @@
     requestAnimationFrame(loop);
   }
 
-  // Auto-correlation pitch detection (robust enough for guitar)
+  // Pitch detection (autocorrelation)
   function autoCorrelatePitch(buf, sampleRate) {
-    // Calculate RMS to ensure signal is present
+    // RMS gate
     let rms = 0; for (let i=0;i<buf.length;i++) { const v = buf[i]; rms += v*v; }
     rms = Math.sqrt(rms / buf.length);
-    if (rms < 0.01) return -1; // too quiet
+    if (rms < 0.005) return -1; // more sensitive than before
 
-    // Trim buffer edges where signal is small
+    // Trim low-amplitude edges
     let start = 0, end = buf.length - 1;
-    const threshold = 0.2;
+    const threshold = 0.10; // was 0.2
     for (let i=0;i<buf.length;i++) { if (Math.abs(buf[i])>threshold) { start=i; break; } }
     for (let i=buf.length-1;i>=0;i--) { if (Math.abs(buf[i])>threshold) { end=i; break; } }
     const size = end - start;
@@ -321,52 +376,29 @@
 
     const slice = buf.slice(start, end);
 
-    // Auto-correlation
-    const MAX_SAMPLES = Math.floor(sampleRate/82) ; // lowest E2 ~82 Hz
-    const MIN_SAMPLES = Math.floor(sampleRate/1000); // 1 kHz upper bound
-    let bestOffset = -1;
-    let bestCorr = 0;
-    let lastCorr = 1;
+    const MAX_SAMPLES = Math.floor(sampleRate/82);
+    const MIN_SAMPLES = Math.floor(sampleRate/1000);
+    let bestOffset = -1, bestCorr = 0, lastCorr = 1;
     for (let offset = MIN_SAMPLES; offset < MAX_SAMPLES; offset++) {
       let corr = 0;
-      for (let i=0; i<slice.length - offset; i++) {
-        corr += slice[i] * slice[i + offset];
-      }
-      corr = corr / (slice.length - offset);
-      if (corr > bestCorr && corr > 0.002) {
-        bestCorr = corr; bestOffset = offset;
-      } else if (bestCorr > 0.01 && corr < lastCorr) {
-        // peak passed
+      for (let i=0; i<slice.length - offset; i++) corr += slice[i] * slice[i + offset];
+      corr /= (slice.length - offset);
+      if (corr > bestCorr && corr > 0.002) { bestCorr = corr; bestOffset = offset; }
+      else if (bestCorr > 0.01 && corr < lastCorr) {
         const shift = parabolicInterp(slice, bestOffset);
         return sampleRate / (bestOffset + shift);
       }
       lastCorr = corr;
     }
-    if (bestOffset > -1) {
-      return sampleRate / bestOffset;
-    }
+    if (bestOffset > -1) return sampleRate / bestOffset;
     return -1;
   }
 
   function parabolicInterp(buf, offset) {
-    // Simple parabolic interpolation around autocorr peak
     const x0 = offset-1, x2 = offset+1;
     if (x0 < 0 || x2 >= buf.length) return 0;
     const s0 = buf[x0], s1 = buf[offset], s2 = buf[x2];
-    const a = (s0 + s2 - 2*s1)/2;
-    const b = (s2 - s0)/2;
-    return a ? -b/(2*a) : 0; // delta to add to offset
-  }
-
-  function freqToNoteName(freq) {
-    const n = Math.round(12 * (Math.log2(freq / 440))) + 69; // MIDI note
-    const name = NOTE_NAMES[n % 12];
-    const octave = Math.floor(n / 12) - 1;
-    return name + octave;
-  }
-
-  function centsOff(freq, ref) {
-    return 1200 * Math.log2(freq / ref) / 12 * 100; // actually: 1200*log2(freq/ref), but scaled to cents directly
+    const a = (s0 + s2 - 2*s1)/2; const b = (s2 - s0)/2; return a ? -b/(2*a) : 0;
   }
 
   function nearestStringIndex(freq) {
@@ -379,9 +411,8 @@
   }
 
   function setNeedle(cents) {
-    // Map cents (-50..+50) -> angle (pi..0) around the arc; but needle is a rectangle rotating from center-bottom
-    const clamped = Math.max(-50, Math.min(50, cents));
-    const deg = (clamped / 50) * 45; // -45deg .. +45deg
+    const clamped = Math.max(-50, Math.min(50, Math.round(cents)));
+    const deg = (clamped / 50) * 45; // -45..+45
     needle.style.transform = `rotate(${deg}deg)`;
   }
 
@@ -389,21 +420,17 @@
     const idx = autoMode ? nearestStringIndex(freq) : manualIndex;
     const target = STANDARD[idx];
 
-    // highlight active in UI (manual or auto)
-    stringBtns.forEach((b,i)=> b.classList.toggle('active', i===idx && !autoMode ? true : (autoMode && i===idx)));
+    updateActiveTile(idx);
 
-    const c = 1200 * Math.log2(freq / target.freq); // cents difference
-    const cDisp = Math.round(c);
+    const cents = 1200 * Math.log2(freq / target.freq);
+    const cDisp = Math.round(cents);
 
-    // Visuals
     freqEl.textContent = freq.toFixed(2) + ' Hz';
     centsEl.textContent = (cDisp>0? '+' : '') + cDisp;
-    detectedNoteEl.textContent = `${target.name}`; // display target note prominently
+    detectedNoteEl.textContent = `${target.name}`;
 
-    // Hint & color
-    const absC = Math.abs(cDisp);
     setNeedle(cDisp);
-    if (absC <= 5) {
+    if (Math.abs(cDisp) <= 5) {
       hintEl.textContent = 'Perfect! In tune.';
       hintEl.style.color = 'var(--good)';
     } else if (cDisp < 0) {
@@ -415,7 +442,7 @@
     }
   }
 
-  // Simple input level scope for user feedback
+  // Simple input level scope
   const ctx = levelCanvas.getContext('2d');
   function drawLevel(){
     if (!running) return;
@@ -438,20 +465,15 @@
     ctx.stroke();
   }
 
-  // Accessibility: space toggles mic
-  window.addEventListener('keydown', (e)=>{
-    if (e.code === 'Space') { e.preventDefault(); startAudio(); }
-  });
+  // Accessibility: space to start mic; P unblock
+  window.addEventListener('keydown', (e)=>{ if (e.code === 'Space') { e.preventDefault(); startAudio(); } });
+  window.addEventListener('pointerdown', ()=>{ if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); }, { once:false });
 
-  // Helpful autoplay unblock on user gesture anywhere
-  window.addEventListener('pointerdown', ()=>{
-    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-  }, { once: false });
+  // HTTPS hint
+  if (location.protocol !== 'https:') { hintEl.textContent = 'Tip: Microphone only works on HTTPS or localhost.'; }
 
-  // Display environment hints
-  if (location.protocol !== 'https:') {
-    hintEl.textContent = 'Tip: Microphone only works on HTTPS or localhost.';
-  }
+  // Init
+  buildStringTiles();
   </script>
 </body>
 </html>
